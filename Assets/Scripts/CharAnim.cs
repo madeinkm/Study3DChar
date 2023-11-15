@@ -21,6 +21,9 @@ public class CharAnim : MonoBehaviour
     private Animator anim;
     private List<string> listDanceNames = new List<string>();
 
+    private bool bWeightChanging = false;
+    private float mouseVertical = 0.5f;
+
     private void Awake()
     {
         anim = GetComponent<Animator>();
@@ -51,6 +54,9 @@ public class CharAnim : MonoBehaviour
     void Update()
     {
         moving();
+        doDance();
+        switchWeight();
+        checkMouseAim();
         
     }
 
@@ -65,7 +71,83 @@ public class CharAnim : MonoBehaviour
         //}
 
         //anim.SetFloat("SpeedVertical", speedVertical);
+        
         anim.SetFloat("SpeedVertical", Input.GetAxis("Vertical"));
         anim.SetFloat("SpeedHorizontal", Input.GetAxis("Horizontal"));
+    }
+    private void doDance()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            anim.CrossFade(listDanceNames[0], 0.1f); 
+            // 애니매이션 트랜지션이 연결 안되있어도 구동시키는 법 -> Play, CrossFade는 먼저동작 이후에 작동하게 만들어줌
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            anim.CrossFade(listDanceNames[1], 0.1f);
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            anim.CrossFade(listDanceNames[2], 0.1f);
+        }
+    }
+    private void switchWeight()
+    {
+        if(bWeightChanging == true) 
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftControl))
+        {
+            if (Cursor.lockState == CursorLockMode.None)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                //anim.SetLayerWeight(1, 1.0f);
+                StartCoroutine(weightChange(true));
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                //anim.SetLayerWeight(1, 0.0f);
+                StartCoroutine(weightChange(false));
+            }
+        }        
+    }
+    private void checkMouseAim()
+    {
+        if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            return;
+        }
+        mouseVertical += Input.GetAxisRaw("Mouse Y") * Time.deltaTime;
+        mouseVertical = Mathf.Clamp(mouseVertical, 0.0f, 1.0f); //최대,최소값 지정 Clamp 사용
+        anim.SetFloat("MouseVertical", mouseVertical);
+    }
+    IEnumerator weightChange(bool _upper) //코루틴 -> update에서 동작하는게 아닌 따로 동작하는 코드
+    {
+        float time = 0f;
+        bWeightChanging = true;
+        if (_upper == true) 
+        {
+            while (anim.GetLayerWeight(1) < 1)
+            {
+                time += Time.deltaTime * 5.0f;
+                anim.SetLayerWeight(1, Mathf.Lerp(0.0f, 1.0f, time));
+                yield return null;
+            }
+            anim.SetLayerWeight(1, 1.0f);
+        }
+        else
+        {
+            while (anim.GetLayerWeight(1) > 0)
+            {
+                time += Time.deltaTime * 5.0f;
+                anim.SetLayerWeight(1, Mathf.Lerp(1.0f, 0.0f, time));
+                yield return null;
+            }
+            anim.SetLayerWeight(1, 0.0f);
+        }
+        bWeightChanging = false;
     }
 }
